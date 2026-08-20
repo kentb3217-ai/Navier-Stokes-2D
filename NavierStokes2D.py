@@ -66,7 +66,7 @@ X, Y = np.meshgrid(x, y)
 
 while counter < time:
     phi_counter = 0
-    change_phi = 0
+    change_phi = np.inf
     # can vectorize this nested for loop, do later though. just means its very computationally heavy
     # Calculate auxiliary field of u (velocity)
     for i in range(1, nodes - 1):
@@ -92,7 +92,7 @@ while counter < time:
     
     # Calculate phi, can use different methods to determine how many iterations one uses (i.e. physical like 100, 20, etc, or check error between the last two phis)
     # Poisson solve, Gaussian Seidel
-    while 10 ** -5 < change_phi and phi_counter < phi_iterations:
+    while 1e-5 < change_phi and phi_counter < phi_iterations:
         # Store old phi
         old_phi = np.copy(phi)
 
