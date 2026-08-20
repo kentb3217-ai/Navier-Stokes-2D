@@ -38,7 +38,7 @@ u_x[:, -1] = rightx
 u_y[:, -1] = righty
 
 # Time step
-# advective restriciton (bad if max velo is zero), hence why we add the diffusive restriction
+# advective restriction (bad if max velo is zero), hence why we add the diffusive restriction
 dt_adv = C * min(dx/(np.max(np.abs(u_x))), dy/(np.max(np.abs(u_y)))) 
 # take np.max(np.abs(u)) b/c we want to know the fastest something is moving and move time_step according to that
 # otherwise, if we don't, then we end up with messy garbage because time step didn't take into account the fastest moving point in the navier stokes
