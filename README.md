@@ -1,11 +1,6 @@
 Main resource: https://repository.lsu.edu/cgi/viewcontent.cgi?article=6692&context=gradschool_theses
 
-Navier Stokes Simulation in 2D
+2D Incompressible Navier-Stokes Fluid Simulation in Python 
 
 Description: 
-
-Improvements:
-
-Results: 
-
-TO-DO:
+- Utilized finite differences, a pressure projection method, and real-time velocity field visualization.
