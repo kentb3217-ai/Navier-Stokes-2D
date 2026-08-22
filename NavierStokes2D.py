@@ -1,4 +1,3 @@
-# %% 
 import matplotlib.pyplot as plt, numpy as np
 
 # Defining the equation
@@ -67,41 +66,32 @@ X, Y = np.meshgrid(x, y)
 while counter < time:
     phi_counter = 0
     change_phi = np.inf
-    # can vectorize this nested for loop, do later though. just means its very computationally heavy
+    
     # Calculate auxiliary field of u (velocity)
-    for i in range(1, nodes - 1):
-        for j in range(1, nodes - 1):
-                dux_dx = ( u_x[i, j + 1] - u_x[i, j - 1] ) / ( 2*dx )
-                dux_dy = ( u_x[i + 1, j] - u_x[i - 1, j] ) / ( 2*dy )
+    dux_dx = (u_x[1:-1, 2:] - u_x[1:-1, :-2]) / (2*dx)
+    dux_dy = (u_x[2:, 1:-1] - u_x[:-2, 1:-1]) / (2*dy)
 
-                duy_dx = ( u_y[i, j + 1] - u_y[i, j - 1] ) / ( 2*dx )
-                duy_dy = ( u_y[i + 1, j] - u_y[i - 1, j] ) / ( 2*dy )
+    duy_dx = (u_y[1:-1, 2:] - u_y[1:-1, :-2]) / (2*dx)
+    duy_dy = (u_y[2:, 1:-1] - u_y[:-2, 1:-1]) / (2*dy)
 
-                # Laplacian of u
-                dd_ux = (( u_x[i, j + 1] - 2 * u_x[i, j] + u_x[i, j - 1] ) / dx**2 ) + (( u_x[i + 1, j] - 2 * u_x[i, j] + u_x[i - 1, j] ) / dy**2 )
-                dd_uy = (( u_y[i, j + 1] - 2 * u_y[i, j] + u_y[i, j - 1] ) / dx**2 ) + (( u_y[i + 1, j] - 2 * u_y[i, j] + u_y[i - 1, j] ) / dy**2 )
+    # Calculate the Laplacian of u
+    dd_ux = ((u_x[1:-1, 2:] - 2 * u_x[1:-1, 1:-1] + u_x[1:-1, :-2]) / dx**2) + ((u_x[2:, 1:-1] - 2 * u_x[1:-1, 1:-1] + u_x[:-2, 1:-1]) / dy**2)
+    dd_uy = ((u_y[1:-1, 2:] - 2 * u_y[1:-1, 1:-1] + u_y[1:-1, :-2]) / dx**2) + ((u_y[2:, 1:-1] - 2 * u_y[1:-1, 1:-1] + u_y[:-2, 1:-1]) / dy**2)
 
-                # find auxiliary field for n+1, in notation: a^{n+1}
-                aux_field_x[i, j] = u_x[i, j] + dt * ( -1 * (u_x[i, j] * dux_dx + u_y[i, j] * dux_dy) +  visc * dd_ux )
-                aux_field_y[i, j]= u_y[i, j] + dt * ( -1 * (u_x[i, j] * duy_dx + u_y[i, j] * duy_dy) +  visc * dd_uy )
+    # Calculate auxiliary field
+    aux_field_x[1:-1, 1:-1] = u_x[1:-1, 1:-1] + dt * (-1 * (u_x[1:-1, 1:-1] * dux_dx + u_y[1:-1, 1:-1] * dux_dy) + visc * dd_ux)
+    aux_field_y[1:-1, 1:-1] = u_y[1:-1, 1:-1] + dt * (-1 * (u_x[1:-1, 1:-1] * duy_dx + u_y[1:-1, 1:-1] * duy_dy) + visc * dd_uy)
 
     # Calculate the divergence of the auxiliary field
-    for i in range(1, nodes - 1):
-        for j in range(1, nodes - 1):
-            div_aux_field[i, j] = ((aux_field_x[i, j + 1] - aux_field_x[i, j - 1]) / (2*dx)) + ((aux_field_y[i + 1, j] - aux_field_y[i - 1, j]) / (2*dy))
+    div_aux_field[1:-1, 1:-1] = ((aux_field_x[1:-1, 2:] - aux_field_x[1:-1, :-2]) / (2*dx)) + ((aux_field_y[2:, 1:-1] - aux_field_y[:-2, 1:-1]) / (2*dy))
     
-    # Calculate phi, can use different methods to determine how many iterations one uses (i.e. physical like 100, 20, etc, or check error between the last two phis)
-    # Poisson solve, Gaussian Seidel
+    # Poisson solve
     while 1e-5 < change_phi and phi_counter < phi_iterations:
         # Store old phi
         old_phi = np.copy(phi)
 
-        # Calculate phi
-        for i in range(1, nodes - 1):
-            for j in range(1, nodes - 1):
-                    # find phi
-                    # only if dy = dx then this eq, otherwise have to use more complicated eq
-                    phi[i, j] = (1/4) * (phi[i + 1, j] + phi[i - 1, j] + phi[i, j + 1] + phi[i, j - 1] - (dx**2 * div_aux_field[i, j]))
+        # Calculate phi utilizing Jacobi iteration
+        phi[1:-1, 1:-1] = (0.25) * (old_phi[2:, 1:-1] + old_phi[:-2, 1:-1] + old_phi[1:-1, 2:] + old_phi[1:-1, :-2] - (dx**2 * div_aux_field[1:-1, 1:-1]))
 
         # boundary conditions for phi (dependent on inside values) (no change in phi)
         phi[0, :] = phi[1, :]
@@ -115,12 +105,9 @@ while counter < time:
 
         phi_counter += 1
 
-    # Calculate gradient of phi
-    for i in range(1, nodes - 1):
-         for j in range(1, nodes - 1):
-            # Find gradient of phi using central first differences formula 
-            grad_phi_x[i, j] = (phi[i, j + 1] - phi[i, j - 1]) / (2 * dx)
-            grad_phi_y[i, j] = (phi[i + 1, j] - phi[i - 1, j]) / (2 * dy)
+    # Calculate gradient of phi, utilized central first differences formula
+    grad_phi_x[1:-1, 1:-1] = (phi[1:-1, 2:] - phi[1:-1, :-2]) / (2*dx)
+    grad_phi_y[1:-1, 1:-1] = (phi[2:, 1:-1] - phi[:-2, 1:-1]) / (2*dy)
 
     # Find grad of phi at boundaries using forward and backward differences 
     # (top and right boundary --> backward, bottom and left boundary --> forward)
