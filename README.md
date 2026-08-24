@@ -9,5 +9,6 @@ Description:
 
 Improvements: 
 - Vectorized several nested 'for' loops in Python version, improving performance.
-- Changed from Gauss-Seidel loop to a Jacobi iteration, improving performance.
 
+TO-DO:
+- Change Jacobi iteration to red-black Gauss-Seidel method. 
