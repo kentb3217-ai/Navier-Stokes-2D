@@ -8,7 +8,7 @@
 
 int main()
 {
-    double counter {};
+    double counter {0.0};
 
     // velocity of the fluid in x and y directions respectively
     Matrix u_x (config.nodes, std::vector<double>(config.nodes, 0.0));

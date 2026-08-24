@@ -16,7 +16,7 @@ Matrix absMatrix (Matrix matrix)
     return matrix;
 }
 
-double maxMatrix (Matrix matrix)
+double maxMatrix (Matrix matrix) // can potentially optimize here, as this makes a copy of matrix
 {
     std::vector<double> max_values(config.nodes, 0.0);
 
@@ -28,7 +28,7 @@ double maxMatrix (Matrix matrix)
     return (*std::max_element(max_values.begin(), max_values.end()));
 }
 
-double dtAdvective (Matrix mX, Matrix mY)
+double dtAdvective (Matrix& mX, Matrix& mY)
 {
     double max_x {maxMatrix(absMatrix(mX))};
     double max_y {maxMatrix(absMatrix(mY))};
