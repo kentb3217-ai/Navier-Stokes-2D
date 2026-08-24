@@ -8,6 +8,6 @@ Description:
 - Utilized finite differences, a pressure projection method, and real-time velocity field visualization.
 
 Improvements: 
-- Vectorized several nested 'for' loops, improving performance.
-- Changed from Gauss-Seidel loop to a Jacobi iteration, improving performance though it will converge more slowly.
+- Vectorized several nested 'for' loops in Python version, improving performance.
+- Changed from Gauss-Seidel loop to a Jacobi iteration, improving performance.
 
