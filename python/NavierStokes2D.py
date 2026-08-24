@@ -3,12 +3,11 @@ import matplotlib.pyplot as plt, numpy as np
 # Defining the equation
 length = 1 # Keep length at 1, anything greater than 3 and it gets shaky
 nodes = 20
-time = 100
+time = 10
 C = 0.1 # CFL number, typically between 0 - 1
 velocity_bound_cond = 1 # ideally between 0 - 1
 visc = .01 # viscocity, typically between 0.01 - .1, in more complex systems it isn't a constant (depends on temp), .01 is what i normally put it at
 phi_iterations = 500 # number of iterations phi can be calculated and refined
-velocity_threshold = velocity_bound_cond * 10**-6 # To ensure velocity doesn't go below a certain value, otherwise sim will blow up
 
 dx = length / (nodes - 1)
 dy = length / (nodes - 1)
@@ -38,9 +37,13 @@ u_y[:, -1] = righty
 
 # Time step
 # advective restriction (bad if max velo is zero), hence why we add the diffusive restriction
-dt_adv = C * min(dx/(np.max(np.abs(u_x))), dy/(np.max(np.abs(u_y)))) 
-# take np.max(np.abs(u)) b/c we want to know the fastest something is moving and move time_step according to that
-# otherwise, if we don't, then we end up with messy garbage because time step didn't take into account the fastest moving point in the navier stokes
+speed_x = np.max(np.abs(u_x))
+speed_y = np.max(np.abs(u_y))
+
+if (speed_x == 0 and speed_y == 0):
+    dt_adv = np.inf
+else:
+    dt_adv = C / ((speed_x / dx) + (speed_y / dy))
 
 # diffusive restriction
 dt_diff = dx**2 / (4 * visc)
@@ -50,6 +53,16 @@ dt = min(dt_adv, dt_diff)
 phi = np.zeros((nodes, nodes))
 aux_field_x = np.zeros((nodes, nodes))
 aux_field_y = np.zeros((nodes, nodes))
+
+aux_field_x[0, :] = botx
+aux_field_y[0, :] = boty
+aux_field_x[-1, :] = upx
+aux_field_y[-1, :] = upy
+aux_field_x[:, 0] = leftx
+aux_field_y[:, 0] = lefty
+aux_field_x[:, -1] = rightx
+aux_field_y[:, -1] = righty
+
 grad_phi_x = np.zeros((nodes, nodes))
 grad_phi_y = np.zeros((nodes, nodes))
 div_aux_field = np.zeros((nodes, nodes))
@@ -64,8 +77,6 @@ y = np.arange(nodes)
 X, Y = np.meshgrid(x, y)
 
 while counter < time:
-    phi_counter = 0
-    change_phi = np.inf
     
     # Calculate auxiliary field of u (velocity)
     dux_dx = (u_x[1:-1, 2:] - u_x[1:-1, :-2]) / (2*dx)
@@ -84,9 +95,11 @@ while counter < time:
 
     # Calculate the divergence of the auxiliary field
     div_aux_field[1:-1, 1:-1] = ((aux_field_x[1:-1, 2:] - aux_field_x[1:-1, :-2]) / (2*dx)) + ((aux_field_y[2:, 1:-1] - aux_field_y[:-2, 1:-1]) / (2*dy))
-    
+
     # Poisson solve
-    while 1e-5 < change_phi and phi_counter < phi_iterations:
+    phi_counter = 0
+    residual_max = np.inf
+    while 1e-5 < residual_max and phi_counter < phi_iterations:
         # Store old phi
         old_phi = np.copy(phi)
 
@@ -100,8 +113,9 @@ while counter < time:
         phi[:, -1] = phi[:, -2]
         phi[0, 0] = 0 # fix value, since phi is only defined up to a constant
 
-        # Calculate change in phi, max change 10 ** -5
-        change_phi = np.max(np.abs(phi - old_phi))
+        # Calculate residual
+        lap_phi = ((phi[1:-1, 2:] - 2 * phi[1:-1, 1:-1] + phi[1:-1, :-2]) / dx**2 + (phi[2:, 1:-1] - 2 * phi[1:-1, 1:-1] + phi[:-2, 1:-1]) / dy**2)
+        residual_max = np.max(np.abs(lap_phi - div_aux_field[1:-1, 1:-1]))
 
         phi_counter += 1
 
@@ -111,9 +125,9 @@ while counter < time:
 
     # Find grad of phi at boundaries using forward and backward differences 
     # (top and right boundary --> backward, bottom and left boundary --> forward)
-    # top
-    grad_phi_y[0, :] = (phi[1, :] - phi[0, :]) / dy 
     # bottom
+    grad_phi_y[0, :] = (phi[1, :] - phi[0, :]) / dy 
+    # top
     grad_phi_y[-1, :] = (phi[-1, :] - phi[-2, :]) / dy
     # left
     grad_phi_x[:, 0] = (phi[:, 1] - phi[:, 0]) / dx
@@ -147,7 +161,10 @@ while counter < time:
     vy_max = np.max(np.abs(u_y))
 
     # Calculate timestep
-    dt_adv = C * min( dx / vx_max, dy / vy_max )
+    if (speed_x == 0 and speed_y == 0):
+        dt_adv = np.inf
+    else:
+        dt_adv = C / ((speed_x / dx) + (speed_y / dy))
     dt_diff = dx**2 / (4 * visc)
     dt = min(dt_adv, dt_diff)
 
