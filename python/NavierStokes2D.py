@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt, numpy as np
 # Defining the equation
 length = 1 # Keep length at 1, anything greater than 3 and it gets shaky
 nodes = 20
-time = 10
+time = 2
 C = 0.1 # CFL number, typically between 0 - 1
 velocity_bound_cond = 1 # ideally between 0 - 1
 visc = .01 # viscocity, typically between 0.01 - .1, in more complex systems it isn't a constant (depends on temp), .01 is what i normally put it at
@@ -17,9 +17,9 @@ u_x = np.zeros((nodes, nodes)) # u
 u_y = np.zeros((nodes, nodes)) # v in many cases
 
 # boundary conditions
-botx = np.linspace(0, -velocity_bound_cond, nodes)
-boty = np.linspace(0, velocity_bound_cond, nodes)
-upx = 0
+botx = 0
+boty = 0
+upx = np.full(nodes, velocity_bound_cond)
 upy = 0
 leftx = 0
 lefty = 0
@@ -93,6 +93,15 @@ while counter < time:
     aux_field_x[1:-1, 1:-1] = u_x[1:-1, 1:-1] + dt * (-1 * (u_x[1:-1, 1:-1] * dux_dx + u_y[1:-1, 1:-1] * dux_dy) + visc * dd_ux)
     aux_field_y[1:-1, 1:-1] = u_y[1:-1, 1:-1] + dt * (-1 * (u_x[1:-1, 1:-1] * duy_dx + u_y[1:-1, 1:-1] * duy_dy) + visc * dd_uy)
 
+    aux_field_x[0, :] = botx
+    aux_field_y[0, :] = boty
+    aux_field_x[-1, :] = upx
+    aux_field_y[-1, :] = upy
+    aux_field_x[:, 0] = leftx
+    aux_field_y[:, 0] = lefty
+    aux_field_x[:, -1] = rightx
+    aux_field_y[:, -1] = righty
+
     # Calculate the divergence of the auxiliary field
     div_aux_field[1:-1, 1:-1] = ((aux_field_x[1:-1, 2:] - aux_field_x[1:-1, :-2]) / (2*dx)) + ((aux_field_y[2:, 1:-1] - aux_field_y[:-2, 1:-1]) / (2*dy))
 
@@ -157,8 +166,8 @@ while counter < time:
     counter += dt
 
     # calculate max velocity in x and y directions
-    vx_max = np.max(np.abs(u_x))
-    vy_max = np.max(np.abs(u_y))
+    speed_x = np.max(np.abs(u_x))
+    speed_y = np.max(np.abs(u_y))
 
     # Calculate timestep
     if (speed_x == 0 and speed_y == 0):
