@@ -103,7 +103,7 @@ while counter < time:
     aux_field_y[:, -1] = righty
 
     # Calculate the divergence of the auxiliary field
-    div_aux_field[1:-1, 1:-1] = ((aux_field_x[1:-1, 2:] - aux_field_x[1:-1, :-2]) / (2*dx)) + ((aux_field_y[2:, 1:-1] - aux_field_y[:-2, 1:-1]) / (2*dy))
+    div_aux_field[1:-1, 1:-1] = ((aux_field_x[1:-1, 2:] - aux_field_x[1:-1, 1:-1]) / dx + (aux_field_y[2:, 1:-1] - aux_field_y[1:-1, 1:-1]) / dy)
 
     # Poisson solve
     phi_counter = 0
@@ -128,22 +128,11 @@ while counter < time:
 
         phi_counter += 1
 
-    # Calculate gradient of phi, utilized central first differences formula
-    grad_phi_x[1:-1, 1:-1] = (phi[1:-1, 2:] - phi[1:-1, :-2]) / (2*dx)
-    grad_phi_y[1:-1, 1:-1] = (phi[2:, 1:-1] - phi[:-2, 1:-1]) / (2*dy)
+    # Calculate gradient of phi using backward differences
+    grad_phi_x[1:-1, 1:-1] = (phi[1:-1, 1:-1] - phi[1:-1, :-2]) / dx
+    grad_phi_y[1:-1, 1:-1] = (phi[1:-1, 1:-1] - phi[:-2, 1:-1]) / dy
 
-    # Find grad of phi at boundaries using forward and backward differences 
-    # (top and right boundary --> backward, bottom and left boundary --> forward)
-    # bottom
-    grad_phi_y[0, :] = (phi[1, :] - phi[0, :]) / dy 
-    # top
-    grad_phi_y[-1, :] = (phi[-1, :] - phi[-2, :]) / dy
-    # left
-    grad_phi_x[:, 0] = (phi[:, 1] - phi[:, 0]) / dx
-    # right
-    grad_phi_x[:, -1] = (phi[:, -1] - phi[:, -2]) / dx
-
-    # compute velocity vector for u_x and u_y for n+1
+    # Projection step
     u_x = aux_field_x - grad_phi_x
     u_y = aux_field_y - grad_phi_y
 
@@ -177,12 +166,16 @@ while counter < time:
     dt_diff = dx**2 / (4 * visc)
     dt = min(dt_adv, dt_diff)
 
+    # Final divergence diagnostic
+    div_u = ((u_x[1:-1, 2:] - u_x[1:-1, 1:-1]) / dx + (u_y[2:, 1:-1] - u_y[1:-1, 1:-1]) / dy)
+
     # For debugging purposes
     print(f"""dt: {dt},
         u_x: {np.max(np.abs(u_x))},
         u_y: {np.max(np.abs(u_y))},
         div_aux: {np.max(np.abs(div_aux_field))}
         aux_fieldx: {np.max(np.abs(aux_field_x))}
-        aux_fieldy: {np.max(np.abs(aux_field_y))}""")
+        aux_fieldy: {np.max(np.abs(aux_field_y))}
+        projected_div: {np.max(np.abs(div_u))}""")
 
 plt.show()
