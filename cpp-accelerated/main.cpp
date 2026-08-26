@@ -1,5 +1,5 @@
 // Work in progress
-
+#include <limits>
 #include <iostream>
 #include <vector>
 #include "configuration.hpp"
@@ -8,7 +8,6 @@
 
 int main()
 {
-    double counter {0.0};
     double nodes {static_cast<double>(config.nodes)}; // to prevent narrowing conversions
 
     // velocity of the fluid in x and y directions respectively
@@ -72,14 +71,52 @@ int main()
 
     while (counter < config.endTime)
     {
+
+        for (int i {0} ; i < (config.nodes) ; ++i)
+        {
+            aux_X[0][i] = botx[i];
+            aux_Y[0][i] = boty[i];
+            aux_X[config.nodes][i] = upx[i];
+            aux_Y[config.nodes][i] = upy[i];
+            aux_X[i][0] = leftx[i];
+            aux_Y[i][0] = lefty[i];
+            aux_X[i][config.nodes] = rightx[i];
+            aux_Y[i][config.nodes] = righty[i];
+        }
+
         for (int i {1} ; i < (config.nodes - 1) ; ++i)
         {
             for (int j {1} ; j < (config.nodes - 1) ; ++j)
             {
-                
+                dux_dx[i][j] = (u_x[i][j + 1] - u_x[i][j - 1]) / (2.0 * config.dx);
+                dux_dy[i][j] = (u_x[i + 1][j] - u_x[i - 1][j]) / (2.0 * config.dx); // dx == dy so dx and dy interchangeable
+
+                duy_dx[i][j] = (u_y[i][j + 1] - u_y[i][j - 1]) / (2.0 * config.dx);
+                duy_dy[i][j] = (u_y[i + 1][j] - u_y[i - 1][j]) / (2.0 * config.dx); 
+
+                dd_ux[i][j] = ((u_x[i][j + 1] - 2.0 * u_x[i][j] + u_x[i][j - 1]) / (config.dx * config.dx)) + ((u_x[i + 1][j] - 2.0 * u_x[i][j] + u_x[i - 1][j]) / (config.dx * config.dx));
+                dd_uy[i][j] = ((u_y[i][j + 1] - 2.0 * u_y[i][j] + u_y[i][j - 1]) / (config.dx * config.dx)) + ((u_y[i + 1][j] - 2.0 * u_y[i][j] + u_y[i - 1][j]) / (config.dx * config.dx));
+
+                aux_X[i][j] = u_x[i][j] + dt * (-1.0 * (u_x[i][j] * dux_dx[i][j] + u_y[i][j] * dux_dy[i][j]) + config.visc * dd_ux[i][j]);
+                aux_Y[i][j] = u_y[i][j] + dt * (-1.0 * (u_x[i][j] * duy_dx[i][j] + u_y[i][j] * duy_dy[i][j]) + config.visc * dd_uy[i][j]);
+            
+                divAuxField[i][j] = ((aux_X[i][j + 1] - aux_X[i][j]) / config.dx + (aux_Y[i + 1][j] - aux_Y[i][j]) / config.dx);
             }
         }
+        
+
+        // Poisson solve
+        double phi_counter {0.0};
+        double residual_max {std::numeric_limits<double>::infinity()};
+
+        while (1e-5 < residual_max && phi_counter < static_cast<double>(config.phi_iterations))
+        {
+
+        }
     }
+
+    // Poisson solve
+
 
     return 0;
 }
