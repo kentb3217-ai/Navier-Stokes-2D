@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt, numpy as np
 # Defining the equation
 length = 1 # Keep length at 1, anything greater than 3 and it gets shaky
 nodes = 20
-time = 10
+time = 2
 C = 0.1 # CFL number, typically between 0 - 1
 velocity_bound_cond = 1 # ideally between 0 - 1
 visc = .01 # viscocity, typically between 0.01 - .1, in more complex systems it isn't a constant (depends on temp), .01 is what i normally put it at
@@ -17,9 +17,9 @@ u_x = np.zeros((nodes, nodes)) # u
 u_y = np.zeros((nodes, nodes)) # v in many cases
 
 # boundary conditions
-botx = np.linspace(0, -velocity_bound_cond, nodes)
-boty = np.linspace(0, velocity_bound_cond, nodes)
-upx = 0
+botx = 0
+boty = 0
+upx = np.full(nodes, velocity_bound_cond)
 upy = 0
 leftx = 0
 lefty = 0
@@ -93,8 +93,17 @@ while counter < time:
     aux_field_x[1:-1, 1:-1] = u_x[1:-1, 1:-1] + dt * (-1 * (u_x[1:-1, 1:-1] * dux_dx + u_y[1:-1, 1:-1] * dux_dy) + visc * dd_ux)
     aux_field_y[1:-1, 1:-1] = u_y[1:-1, 1:-1] + dt * (-1 * (u_x[1:-1, 1:-1] * duy_dx + u_y[1:-1, 1:-1] * duy_dy) + visc * dd_uy)
 
+    aux_field_x[0, :] = botx
+    aux_field_y[0, :] = boty
+    aux_field_x[-1, :] = upx
+    aux_field_y[-1, :] = upy
+    aux_field_x[:, 0] = leftx
+    aux_field_y[:, 0] = lefty
+    aux_field_x[:, -1] = rightx
+    aux_field_y[:, -1] = righty
+
     # Calculate the divergence of the auxiliary field
-    div_aux_field[1:-1, 1:-1] = ((aux_field_x[1:-1, 2:] - aux_field_x[1:-1, :-2]) / (2*dx)) + ((aux_field_y[2:, 1:-1] - aux_field_y[:-2, 1:-1]) / (2*dy))
+    div_aux_field[1:-1, 1:-1] = ((aux_field_x[1:-1, 2:] - aux_field_x[1:-1, 1:-1]) / dx + (aux_field_y[2:, 1:-1] - aux_field_y[1:-1, 1:-1]) / dy)
 
     # Poisson solve
     phi_counter = 0
@@ -119,22 +128,11 @@ while counter < time:
 
         phi_counter += 1
 
-    # Calculate gradient of phi, utilized central first differences formula
-    grad_phi_x[1:-1, 1:-1] = (phi[1:-1, 2:] - phi[1:-1, :-2]) / (2*dx)
-    grad_phi_y[1:-1, 1:-1] = (phi[2:, 1:-1] - phi[:-2, 1:-1]) / (2*dy)
+    # Calculate gradient of phi using backward differences
+    grad_phi_x[1:-1, 1:-1] = (phi[1:-1, 1:-1] - phi[1:-1, :-2]) / dx
+    grad_phi_y[1:-1, 1:-1] = (phi[1:-1, 1:-1] - phi[:-2, 1:-1]) / dy
 
-    # Find grad of phi at boundaries using forward and backward differences 
-    # (top and right boundary --> backward, bottom and left boundary --> forward)
-    # bottom
-    grad_phi_y[0, :] = (phi[1, :] - phi[0, :]) / dy 
-    # top
-    grad_phi_y[-1, :] = (phi[-1, :] - phi[-2, :]) / dy
-    # left
-    grad_phi_x[:, 0] = (phi[:, 1] - phi[:, 0]) / dx
-    # right
-    grad_phi_x[:, -1] = (phi[:, -1] - phi[:, -2]) / dx
-
-    # compute velocity vector for u_x and u_y for n+1
+    # Projection step
     u_x = aux_field_x - grad_phi_x
     u_y = aux_field_y - grad_phi_y
 
@@ -157,8 +155,8 @@ while counter < time:
     counter += dt
 
     # calculate max velocity in x and y directions
-    vx_max = np.max(np.abs(u_x))
-    vy_max = np.max(np.abs(u_y))
+    speed_x = np.max(np.abs(u_x))
+    speed_y = np.max(np.abs(u_y))
 
     # Calculate timestep
     if (speed_x == 0 and speed_y == 0):
@@ -168,12 +166,16 @@ while counter < time:
     dt_diff = dx**2 / (4 * visc)
     dt = min(dt_adv, dt_diff)
 
+    # Final divergence diagnostic
+    div_u = ((u_x[1:-1, 2:] - u_x[1:-1, 1:-1]) / dx + (u_y[2:, 1:-1] - u_y[1:-1, 1:-1]) / dy)
+
     # For debugging purposes
     print(f"""dt: {dt},
         u_x: {np.max(np.abs(u_x))},
         u_y: {np.max(np.abs(u_y))},
         div_aux: {np.max(np.abs(div_aux_field))}
         aux_fieldx: {np.max(np.abs(aux_field_x))}
-        aux_fieldy: {np.max(np.abs(aux_field_y))}""")
+        aux_fieldy: {np.max(np.abs(aux_field_y))}
+        projected_div: {np.max(np.abs(div_u))}""")
 
 plt.show()
