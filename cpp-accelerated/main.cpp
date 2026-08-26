@@ -6,6 +6,8 @@
 #include "functions.hpp"
 #include "functions.cpp"
 
+// Note: Go through and check if its matrix[nodes] or matrix[nodes - 1] for last col/row
+
 int main()
 {
     double nodes {static_cast<double>(config.nodes)}; // to prevent narrowing conversions
@@ -111,12 +113,18 @@ int main()
 
         while (1e-5 < residual_max && phi_counter < static_cast<double>(config.phi_iterations))
         {
+            Matrix old_phi {phi};
 
+            for (int i {1} ; i < (config.nodes - 1) ; ++i)
+            {
+                for (int j {1} ; j < (config.nodes - 1) ; ++j)
+                {
+                    phi[i][j] = (0.25) * (old_phi[i + 1][j] + old_phi[i - 1][j] + old_phi[i][j + 1] + old_phi[i][j - 1] - ((config.dx * config.dx) * divAuxField[i][j]));
+                }
+            }
         }
+
+        phi_counter += 1;
     }
-
-    // Poisson solve
-
-
     return 0;
 }
