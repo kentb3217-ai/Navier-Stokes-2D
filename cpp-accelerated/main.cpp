@@ -122,9 +122,22 @@ int main()
                     phi[i][j] = (0.25) * (old_phi[i + 1][j] + old_phi[i - 1][j] + old_phi[i][j + 1] + old_phi[i][j - 1] - ((config.dx * config.dx) * divAuxField[i][j]));
                 }
             }
+            phi_counter += 1;
         }
 
-        phi_counter += 1;
+        // Calculate gradient of phi using backward differences
+        for (int i {1} ; i < (config.nodes - 1) ; ++i)
+        {
+            for (int j {1} ; j < (config.nodes - 1) ; ++j)
+            {
+                gradPhi_X[i][j] = (phi[i][j] - phi[i][j - 1]) / config.dx;
+                gradPhi_Y[i][j] = (phi[i][j] - phi[i - 1][j]) / config.dx;
+            }
+        }
+
+        // Projection step
+        u_x = subtractMatrices(aux_X, gradPhi_X);
+        u_y = subtractMatrices(aux_Y, gradPhi_Y);
     }
     return 0;
 }
