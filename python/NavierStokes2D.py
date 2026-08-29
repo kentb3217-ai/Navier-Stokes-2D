@@ -171,8 +171,8 @@ while counter < time:
 
     # For debugging purposes
     print(f"""dt: {dt},
-        u_x: {np.max(np.abs(u_x))},
-        u_y: {np.max(np.abs(u_y))},
+        u_x: {speed_x},
+        u_y: {speed_y},
         div_aux: {np.max(np.abs(div_aux_field))}
         aux_fieldx: {np.max(np.abs(aux_field_x))}
         aux_fieldy: {np.max(np.abs(aux_field_y))}

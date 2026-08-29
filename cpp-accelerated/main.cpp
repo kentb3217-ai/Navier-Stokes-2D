@@ -138,6 +138,38 @@ int main()
         // Projection step
         u_x = subtractMatrices(aux_X, gradPhi_X);
         u_y = subtractMatrices(aux_Y, gradPhi_Y);
+
+        // Reapply boundary conditions
+        for (int i {0} ; i < config.nodes ; ++i)
+        {
+            u_x[0][i] = botx[i];
+            u_y[0][i] = boty[i];
+            u_x[config.nodes][i] = upx[i];
+            u_y[config.nodes][i] = upy[i];
+            u_x[i][0] = leftx[i];
+            u_y[i][0] = lefty[i];
+            u_x[i][config.nodes] = rightx[i];
+            u_y[i][config.nodes] = righty[i];
+        }
+
+        counter += dt;
+
+        double speed_x {maxMatrix(absMatrix(u_x))};
+        double speed_y {maxMatrix(absMatrix(u_y))};
+
+        if (speed_x == 0 && speed_y == 0)
+        {
+            advective = std::numeric_limits<double>::infinity();
+        }
+        else
+        {
+            advective = config.cfl / ((speed_x / config.dx) + (speed_y / config.dx));
+        }
+
+        diffusive = (config.dx * config.dx) / (4 * config.visc);
+        dt = std::min(advective, diffusive);
+
+
     }
     return 0;
 }
