@@ -108,7 +108,6 @@ int main()
             }
         }
         
-
         // Poisson solve
         double phi_counter {0.0};
         double residual_max {std::numeric_limits<double>::infinity()};
