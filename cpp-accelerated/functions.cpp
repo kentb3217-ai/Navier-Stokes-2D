@@ -40,7 +40,7 @@ Matrix subtractMatrices (Matrix& m1, Matrix& m2)
 {
     double sizeMatrix {static_cast<double>(m1.size())};
 
-    Matrix m3 {sizeMatrix, std::vector<double>{sizeMatrix, 0.0}};
+    Matrix m3 (sizeMatrix, std::vector<double>(sizeMatrix, 0.0));
     for (int i {0} ; i < sizeMatrix ; ++i)
     {
         for (int j {0} ; j < sizeMatrix ; ++j)
