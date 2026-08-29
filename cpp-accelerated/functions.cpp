@@ -18,7 +18,7 @@ Matrix absMatrix (Matrix matrix)
 
 double maxMatrix (Matrix matrix) // can potentially optimize here, as this makes a copy of matrix
 {
-    std::vector<double> max_values{static_cast<double>(config.nodes), 0.0};
+    std::vector<double> max_values(config.nodes, 0.0);
 
     for (int i {0} ; i < config.nodes ; ++i)
     {
@@ -38,9 +38,9 @@ double dtAdvective (Matrix& mX, Matrix& mY)
 
 Matrix subtractMatrices (Matrix& m1, Matrix& m2)
 {
-    double sizeMatrix {static_cast<double>(m1.size())};
+    size_t sizeMatrix {m1.size()};
 
-    Matrix m3 (sizeMatrix, std::vector<double>(sizeMatrix, 0.0));
+    Matrix m3 {sizeMatrix, std::vector<double>(sizeMatrix, 0.0)};
     for (int i {0} ; i < sizeMatrix ; ++i)
     {
         for (int j {0} ; j < sizeMatrix ; ++j)

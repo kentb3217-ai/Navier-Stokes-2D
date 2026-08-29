@@ -10,21 +10,21 @@
 
 int main()
 {
-    double nodes {static_cast<double>(config.nodes)}; // to prevent narrowing conversions
+    double nodes {static_cast<double>(config.nodes)};
 
     // velocity of the fluid in x and y directions respectively
-    Matrix u_x {config.nodes, std::vector<double>{nodes, 0.0}};
-    Matrix u_y {config.nodes, std::vector<double>{nodes, 0.0}};
+    Matrix u_x {config.nodes, std::vector<double>(config.nodes, 0.0)};
+    Matrix u_y {config.nodes, std::vector<double>(config.nodes, 0.0)};
 
     // Boundary conditions
-    std::vector<double> botx {std::vector<double>{nodes, 0.0}};
-    std::vector<double> boty {std::vector<double>{nodes, 0.0}};
-    std::vector<double> upx {std::vector<double>{nodes, 0.0}};
-    std::vector<double> upy {std::vector<double>{nodes, 0.0}};
-    std::vector<double> leftx {std::vector<double>{nodes, 0.0}};
-    std::vector<double> lefty {std::vector<double>{nodes, 0.0}};
-    std::vector<double> rightx {std::vector<double>{nodes, 0.0}};
-    std::vector<double> righty {std::vector<double>{nodes, 0.0}};
+    std::vector<double> botx {std::vector<double>(config.nodes, 0.0)};
+    std::vector<double> boty {std::vector<double>(config.nodes, 0.0)};
+    std::vector<double> upx {std::vector<double>(config.nodes, 0.0)};
+    std::vector<double> upy {std::vector<double>(config.nodes, 0.0)};
+    std::vector<double> leftx {std::vector<double>(config.nodes, 0.0)};
+    std::vector<double> lefty {std::vector<double>(config.nodes, 0.0)};
+    std::vector<double> rightx {std::vector<double>(config.nodes, 0.0)};
+    std::vector<double> righty {std::vector<double>(config.nodes, 0.0)};
 
     u_x[0] = botx;
     u_y[0] = boty;
@@ -52,24 +52,26 @@ int main()
     double counter {0.0};
 
     // Initializing partial derivatives, laplacians, auxiliary fields, phi, gradient phi, and divergence of the auxiliary field
-    Matrix phi {config.nodes, std::vector<double>{nodes, 0.0}};
+    Matrix phi {config.nodes, std::vector<double>(config.nodes, 0.0)};
 
-    Matrix aux_X {config.nodes, std::vector<double>{nodes, 0.0}};
-    Matrix aux_Y {config.nodes, std::vector<double>{nodes, 0.0}};
+    Matrix aux_X {config.nodes, std::vector<double>(config.nodes, 0.0)};
+    Matrix aux_Y {config.nodes, std::vector<double>(config.nodes, 0.0)};
 
-    Matrix gradPhi_X {config.nodes, std::vector<double>{nodes, 0.0}};
-    Matrix gradPhi_Y {config.nodes, std::vector<double>{nodes, 0.0}};
+    Matrix gradPhi_X {config.nodes, std::vector<double>(config.nodes, 0.0)};
+    Matrix gradPhi_Y {config.nodes, std::vector<double>(config.nodes, 0.0)};
 
-    Matrix divAuxField {config.nodes, std::vector<double>{nodes, 0.0}};
+    Matrix divAuxField {config.nodes, std::vector<double>(config.nodes, 0.0)};
 
-    Matrix dux_dx {config.nodes, std::vector<double>{nodes, 0.0}};
-    Matrix dux_dy {config.nodes, std::vector<double>{nodes, 0.0}};
+    Matrix dux_dx {config.nodes, std::vector<double>(config.nodes, 0.0)};
+    Matrix dux_dy {config.nodes, std::vector<double>(config.nodes, 0.0)};
 
-    Matrix duy_dx {config.nodes, std::vector<double>{nodes, 0.0}};
-    Matrix duy_dy {config.nodes, std::vector<double>{nodes, 0.0}};
+    Matrix duy_dx {config.nodes, std::vector<double>(config.nodes, 0.0)};
+    Matrix duy_dy {config.nodes, std::vector<double>(config.nodes, 0.0)};
 
-    Matrix dd_ux {config.nodes, std::vector<double>{nodes, 0.0}};
-    Matrix dd_uy {config.nodes, std::vector<double>{nodes, 0.0}};
+    Matrix dd_ux {config.nodes, std::vector<double>(config.nodes, 0.0)};
+    Matrix dd_uy {config.nodes, std::vector<double>(config.nodes, 0.0)};
+
+    Matrix lap_phi {config.nodes, std::vector<double>(config.nodes, 0.0)};
 
     while (counter < config.endTime)
     {
@@ -78,17 +80,17 @@ int main()
         {
             aux_X[0][i] = botx[i];
             aux_Y[0][i] = boty[i];
-            aux_X[config.nodes][i] = upx[i];
-            aux_Y[config.nodes][i] = upy[i];
+            aux_X[config.nodes - 1][i] = upx[i];
+            aux_Y[config.nodes - 1][i] = upy[i];
             aux_X[i][0] = leftx[i];
             aux_Y[i][0] = lefty[i];
-            aux_X[i][config.nodes] = rightx[i];
-            aux_Y[i][config.nodes] = righty[i];
+            aux_X[i][config.nodes - 1] = rightx[i];
+            aux_Y[i][config.nodes - 1] = righty[i];
         }
 
-        for (int i {1} ; i < (config.nodes - 1) ; ++i)
+        for (int i {1} ; i < (config.nodes - 2) ; ++i)
         {
-            for (int j {1} ; j < (config.nodes - 1) ; ++j)
+            for (int j {1} ; j < (config.nodes - 2) ; ++j)
             {
                 dux_dx[i][j] = (u_x[i][j + 1] - u_x[i][j - 1]) / (2.0 * config.dx);
                 dux_dy[i][j] = (u_x[i + 1][j] - u_x[i - 1][j]) / (2.0 * config.dx); // dx == dy so dx and dy interchangeable
@@ -115,13 +117,17 @@ int main()
         {
             Matrix old_phi {phi};
 
-            for (int i {1} ; i < (config.nodes - 1) ; ++i)
+            for (int i {1} ; i < (config.nodes - 2) ; ++i)
             {
                 for (int j {1} ; j < (config.nodes - 1) ; ++j)
                 {
                     phi[i][j] = (0.25) * (old_phi[i + 1][j] + old_phi[i - 1][j] + old_phi[i][j + 1] + old_phi[i][j - 1] - ((config.dx * config.dx) * divAuxField[i][j]));
+                    
+                    lap_phi[i][j] = ((phi[i][j + 1] - 2 * phi[i][j] + phi[i][j - 1]) / (config.dx * config.dx) + (phi[i + 1][j] - 2 * phi[i][j] + phi[i - 1][j]) / (config.dx * config.dx));
                 }
             }
+
+            residual_max = maxMatrix(absMatrix(subtractMatrices(lap_phi, divAuxField)));
             phi_counter += 1;
         }
 
@@ -144,12 +150,12 @@ int main()
         {
             u_x[0][i] = botx[i];
             u_y[0][i] = boty[i];
-            u_x[config.nodes][i] = upx[i];
-            u_y[config.nodes][i] = upy[i];
+            u_x[config.nodes - 1][i] = upx[i];
+            u_y[config.nodes - 1][i] = upy[i];
             u_x[i][0] = leftx[i];
             u_y[i][0] = lefty[i];
-            u_x[i][config.nodes] = rightx[i];
-            u_y[i][config.nodes] = righty[i];
+            u_x[i][config.nodes - 1] = rightx[i];
+            u_y[i][config.nodes - 1] = righty[i];
         }
 
         counter += dt;
@@ -169,7 +175,7 @@ int main()
         diffusive = (config.dx * config.dx) / (4 * config.visc);
         dt = std::min(advective, diffusive);
 
-
+        std::cout << "dt: " << dt << "\ndiffusive: " << diffusive << "\n";
     }
     return 0;
 }
