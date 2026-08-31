@@ -75,11 +75,16 @@ int main()
 
     Matrix lap_phi {config.nodes, std::vector<double>(config.nodes, 0.0)};
 
-    std::vector<double> dtTot {dt};
+    struct Data {
+    std::vector<Matrix> velX;
+    std::vector<Matrix> velY;
+    std::vector<double> time;
+    };
+
+    Data d {std::vector<Matrix> {u_x}, std::vector<Matrix> {u_y}, std::vector<double> {dt}};
 
     while (counter < config.endTime)
     {
-
         for (int i {0} ; i < (config.nodes) ; ++i)
         {
             aux_X[0][i] = botx[i];
@@ -177,20 +182,19 @@ int main()
 
         diffusive = (config.dx * config.dx) / (4 * config.visc);
         dt = std::min(advective, diffusive);
-        dtTot.push_back(dt);
+
+        d.velX.push_back(u_x);
+        d.velY.push_back(u_y);
+        d.time.push_back(dt);
 
         std::cout << "dt: " << dt << "\ndiffusive: " << diffusive << "\n";
     }
 
-    std::ofstream file("data.bin", std::ios::binary);
+    std::ofstream out("data.bin", std::ios::binary);
 
-    std::uint64_t count {u_x.size()};
-
-    file.write(reinterpret_cast<const char*>(&count), sizeof(count));
-
-    file.write(reinterpret_cast<const char*>(u_x.data()), count * sizeof(double));
-    file.write(reinterpret_cast<const char*>(u_y.data()), count * sizeof(double));
-    file.write(reinterpret_cast<const char*>(dtTot.data()), count * sizeof(double));
+    writeVecMatrix(out, d.velX);
+    writeVecMatrix(out, d.velY);
+    writeVector(out,d.time);
     
     return 0;
 }

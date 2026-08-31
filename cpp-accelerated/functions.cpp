@@ -1,5 +1,7 @@
 #include <iostream>
 #include <algorithm>
+#include <cstdint>
+#include <fstream>
 #include "functions.hpp"
 #include "configuration.hpp"
 
@@ -50,4 +52,36 @@ Matrix subtractMatrices (Matrix& m1, Matrix& m2)
     }
 
     return m3;
+}
+
+void writeVector(std::ofstream& out, const std::vector<double>& vec)
+{
+    u_int32_t n {vec.size()};
+
+    out.write(reinterpret_cast<char*>(&n), sizeof(n));
+    out.write(reinterpret_cast<const char*>(vec.data()), n * sizeof(double));
+}
+
+void writeMatrix(std::ofstream& out, const Matrix& mat)
+{
+    u_int32_t rows {mat.size()};
+
+    out.write(reinterpret_cast<char*>(&rows), sizeof(rows));
+
+    for (const auto& row : mat)
+    {
+        writeVector(out, row);
+    }
+}
+
+void writeVecMatrix(std::ofstream& out, const std::vector<Matrix> lat)
+{
+    u_int32_t count {lat.size()};
+
+    out.write(reinterpret_cast<char*>(&count), sizeof(count));
+
+    for (const auto& n : lat)
+    {
+        writeMatrix(out, n);
+    }
 }
