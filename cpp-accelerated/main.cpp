@@ -184,12 +184,6 @@ int main()
 
     std::ofstream file("data.bin", std::ios::binary);
 
-    if (!file) 
-    {
-        std::cerr << "Couldn't open file\n";
-        return 1;
-    }
-
     std::uint64_t count {u_x.size()};
 
     file.write(reinterpret_cast<const char*>(&count), sizeof(count));

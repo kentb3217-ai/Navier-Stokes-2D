@@ -12,13 +12,12 @@ with open(file_path, "rb") as file:
     dtTot = np.fromfile(file, dtype="<f8", count=count)
 
 fig, ax = plt.subplots()
-X, Y = np.meshgrid(np.arange(ux.size), np.arange(uy.size)) # need to get number of nodes, not sizes of ux and uy
-
+X, Y = np.meshgrid(np.arange(ux.size), np.arange(uy.size))
 iter : int = 0
 
 while iter < dtTot.size:
     ax.clear()
     ax.set_aspect('equal')
-    ax.quiver(X, Y, ux, uy)
+    ax.quiver(X, Y, ux[iter], uy[iter])
     ax.set_title("Distribution at t: {:.3f} [s].".format(dtTot[iter]))
     plt.pause(0.01)
