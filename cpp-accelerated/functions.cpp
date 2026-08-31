@@ -41,9 +41,9 @@ Matrix subtractMatrices (Matrix& m1, Matrix& m2)
     size_t sizeMatrix {m1.size()};
 
     Matrix m3 {sizeMatrix, std::vector<double>(sizeMatrix, 0.0)};
-    for (int i {0} ; i < sizeMatrix ; ++i)
+    for (std::size_t i {0} ; i < sizeMatrix ; ++i)
     {
-        for (int j {0} ; j < sizeMatrix ; ++j)
+        for (std::size_t j {0} ; j < sizeMatrix ; ++j)
         {
             m3[i][j] = m1[i][j] - m2[i][j];
         }

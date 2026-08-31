@@ -2,6 +2,8 @@
 #include <limits>
 #include <iostream>
 #include <vector>
+#include <cstdint>
+#include <fstream>
 #include "configuration.hpp"
 #include "functions.hpp"
 #include "functions.cpp"
@@ -72,6 +74,8 @@ int main()
     Matrix dd_uy {config.nodes, std::vector<double>(config.nodes, 0.0)};
 
     Matrix lap_phi {config.nodes, std::vector<double>(config.nodes, 0.0)};
+
+    std::vector<double> dtTot {dt};
 
     while (counter < config.endTime)
     {
@@ -173,8 +177,26 @@ int main()
 
         diffusive = (config.dx * config.dx) / (4 * config.visc);
         dt = std::min(advective, diffusive);
+        dtTot.push_back(dt);
 
         std::cout << "dt: " << dt << "\ndiffusive: " << diffusive << "\n";
     }
+
+    std::ofstream file("data.bin", std::ios::binary);
+
+    if (!file) 
+    {
+        std::cerr << "Couldn't open file\n";
+        return 1;
+    }
+
+    std::uint64_t count {u_x.size()};
+
+    file.write(reinterpret_cast<const char*>(&count), sizeof(count));
+
+    file.write(reinterpret_cast<const char*>(u_x.data()), count * sizeof(double));
+    file.write(reinterpret_cast<const char*>(u_y.data()), count * sizeof(double));
+    file.write(reinterpret_cast<const char*>(dtTot.data()), count * sizeof(double));
+    
     return 0;
 }
