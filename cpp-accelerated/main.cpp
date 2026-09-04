@@ -4,22 +4,18 @@
 #include <vector>
 #include <cstdint>
 #include <fstream>
+#include <algorithm>
 #include "configuration.hpp"
 #include "functions.hpp"
-#include "functions.cpp"
-
-// Note: Go through and check if its matrix[nodes] or matrix[nodes - 1] for last col/row
 
 int main()
 {
-    double nodes {static_cast<double>(config.nodes)};
-
     // velocity of the fluid in x and y directions respectively
     Matrix u_x {config.nodes, std::vector<double>(config.nodes, 0.0)};
     Matrix u_y {config.nodes, std::vector<double>(config.nodes, 0.0)};
 
     // Boundary conditions
-    std::vector<double> botx {std::vector<double>(config.nodes, 0.0)};
+    std::vector<double> botx {std::vector<double>(config.nodes, config.velocity_bound_cond)};
     std::vector<double> boty {std::vector<double>(config.nodes, 0.0)};
     std::vector<double> upx {std::vector<double>(config.nodes, 0.0)};
     std::vector<double> upy {std::vector<double>(config.nodes, 0.0)};
@@ -50,10 +46,8 @@ int main()
     double diffusive {(config.dx*config.dx) / (4 * config.visc)};
     double dt {std::min(advective, diffusive)};
 
-    // WHILE LOOP
     double counter {0.0};
 
-    // Initializing partial derivatives, laplacians, auxiliary fields, phi, gradient phi, and divergence of the auxiliary field
     Matrix phi {config.nodes, std::vector<double>(config.nodes, 0.0)};
 
     Matrix aux_X {config.nodes, std::vector<double>(config.nodes, 0.0)};
@@ -81,7 +75,7 @@ int main()
     std::vector<double> time;
     };
 
-    Data d {std::vector<Matrix> {u_x}, std::vector<Matrix> {u_y}, std::vector<double> {dt}};
+    Data d {std::vector<Matrix> {u_x}, std::vector<Matrix> {u_y}, std::vector<double> {counter}};
 
     while (counter < config.endTime)
     {
@@ -97,9 +91,9 @@ int main()
             aux_Y[i][config.nodes - 1] = righty[i];
         }
 
-        for (int i {1} ; i < (config.nodes - 2) ; ++i)
+        for (int i {1} ; i < (config.nodes - 1) ; ++i)
         {
-            for (int j {1} ; j < (config.nodes - 2) ; ++j)
+            for (int j {1} ; j < (config.nodes - 1) ; ++j)
             {
                 dux_dx[i][j] = (u_x[i][j + 1] - u_x[i][j - 1]) / (2.0 * config.dx);
                 dux_dy[i][j] = (u_x[i + 1][j] - u_x[i - 1][j]) / (2.0 * config.dx); // dx == dy so dx and dy interchangeable
@@ -125,12 +119,18 @@ int main()
         {
             Matrix old_phi {phi};
 
-            for (int i {1} ; i < (config.nodes - 2) ; ++i)
+            for (int i {1} ; i < (config.nodes - 1) ; ++i)
             {
                 for (int j {1} ; j < (config.nodes - 1) ; ++j)
                 {
                     phi[i][j] = (0.25) * (old_phi[i + 1][j] + old_phi[i - 1][j] + old_phi[i][j + 1] + old_phi[i][j - 1] - ((config.dx * config.dx) * divAuxField[i][j]));
-                    
+                }
+            }
+
+            for (int i {1} ; i < (config.nodes - 1) ; ++i)
+            {
+                for (int j {1} ; j < (config.nodes - 1) ; ++j)
+                {              
                     lap_phi[i][j] = ((phi[i][j + 1] - 2 * phi[i][j] + phi[i][j - 1]) / (config.dx * config.dx) + (phi[i + 1][j] - 2 * phi[i][j] + phi[i - 1][j]) / (config.dx * config.dx));
                 }
             }
@@ -185,7 +185,7 @@ int main()
 
         d.velX.push_back(u_x);
         d.velY.push_back(u_y);
-        d.time.push_back(dt);
+        d.time.push_back(counter);
 
         std::cout << "dt: " << dt << "\ndiffusive: " << diffusive << "\n";
     }

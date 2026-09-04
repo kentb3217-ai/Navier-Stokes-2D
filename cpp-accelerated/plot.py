@@ -1,6 +1,5 @@
 import numpy as np, matplotlib.pyplot as plt
 import struct
-from pathlib import Path
 
 def read_exact(file, size):
     data = file.read(size)
