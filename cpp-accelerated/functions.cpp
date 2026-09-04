@@ -56,7 +56,7 @@ Matrix subtractMatrices (Matrix& m1, Matrix& m2)
 
 void writeVector(std::ofstream& out, const std::vector<double>& vec)
 {
-    u_int32_t n {vec.size()};
+    std::uint32_t n {vec.size()};
 
     out.write(reinterpret_cast<char*>(&n), sizeof(n));
     out.write(reinterpret_cast<const char*>(vec.data()), n * sizeof(double));
@@ -64,7 +64,7 @@ void writeVector(std::ofstream& out, const std::vector<double>& vec)
 
 void writeMatrix(std::ofstream& out, const Matrix& mat)
 {
-    u_int32_t rows {mat.size()};
+    std::uint32_t rows {mat.size()};
 
     out.write(reinterpret_cast<char*>(&rows), sizeof(rows));
 
@@ -74,9 +74,9 @@ void writeMatrix(std::ofstream& out, const Matrix& mat)
     }
 }
 
-void writeVecMatrix(std::ofstream& out, const std::vector<Matrix> lat)
+void writeVecMatrix(std::ofstream& out, const std::vector<Matrix>& lat)
 {
-    u_int32_t count {lat.size()};
+    std::uint32_t count {lat.size()};
 
     out.write(reinterpret_cast<char*>(&count), sizeof(count));
 
