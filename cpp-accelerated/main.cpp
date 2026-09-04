@@ -194,7 +194,7 @@ int main()
 
     writeVecMatrix(out, d.velX);
     writeVecMatrix(out, d.velY);
-    writeVector(out,d.time);
+    writeVector(out, d.time);
     
     return 0;
 }
