@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <fstream>
 #include <algorithm>
+#include <cmath>
 #include "configuration.hpp"
 #include "functions.hpp"
 
@@ -15,9 +16,9 @@ int main()
     Matrix u_y {config.nodes, std::vector<double>(config.nodes, 0.0)};
 
     // Boundary conditions
-    std::vector<double> botx {std::vector<double>(config.nodes, config.velocity_bound_cond)};
+    std::vector<double> botx {std::vector<double>(config.nodes, 0.0)};
     std::vector<double> boty {std::vector<double>(config.nodes, 0.0)};
-    std::vector<double> upx {std::vector<double>(config.nodes, 0.0)};
+    std::vector<double> upx {std::vector<double>(config.nodes, config.velocity_bound_cond)};
     std::vector<double> upy {std::vector<double>(config.nodes, 0.0)};
     std::vector<double> leftx {std::vector<double>(config.nodes, 0.0)};
     std::vector<double> lefty {std::vector<double>(config.nodes, 0.0)};
@@ -95,18 +96,27 @@ int main()
         {
             for (int j {1} ; j < (config.nodes - 1) ; ++j)
             {
-                dux_dx[i][j] = (u_x[i][j + 1] - u_x[i][j - 1]) / (2.0 * config.dx);
-                dux_dy[i][j] = (u_x[i + 1][j] - u_x[i - 1][j]) / (2.0 * config.dx); // dx == dy so dx and dy interchangeable
+                const double& advector_x {u_x[i][j]};
+                const double& advector_y {u_y[i][j]};
 
-                duy_dx[i][j] = (u_y[i][j + 1] - u_y[i][j - 1]) / (2.0 * config.dx);
-                duy_dy[i][j] = (u_y[i + 1][j] - u_y[i - 1][j]) / (2.0 * config.dx); 
+                dux_dx[i][j] = advector_x >= 0.0 ? (u_x[i][j] - u_x[i][j - 1]) / config.dx : (u_x[i][j + 1] - u_x[i][j]) / config.dx;
+                dux_dy[i][j] = advector_y >= 0.0 ? (u_x[i][j] - u_x[i - 1][j]) / config.dx : (u_x[i + 1][j] - u_x[i][j]) / config.dx;
+
+                duy_dx[i][j] = advector_x >= 0.0 ? (u_y[i][j] - u_y[i][j - 1]) / config.dx : (u_y[i][j + 1] - u_y[i][j]) / config.dx;
+                duy_dy[i][j] = advector_y >= 0.0 ? (u_y[i][j] - u_y[i - 1][j]) / config.dx : (u_y[i + 1][j] - u_y[i][j]) / config.dx;
 
                 dd_ux[i][j] = ((u_x[i][j + 1] - 2.0 * u_x[i][j] + u_x[i][j - 1]) / (config.dx * config.dx)) + ((u_x[i + 1][j] - 2.0 * u_x[i][j] + u_x[i - 1][j]) / (config.dx * config.dx));
                 dd_uy[i][j] = ((u_y[i][j + 1] - 2.0 * u_y[i][j] + u_y[i][j - 1]) / (config.dx * config.dx)) + ((u_y[i + 1][j] - 2.0 * u_y[i][j] + u_y[i - 1][j]) / (config.dx * config.dx));
 
                 aux_X[i][j] = u_x[i][j] + dt * (-1.0 * (u_x[i][j] * dux_dx[i][j] + u_y[i][j] * dux_dy[i][j]) + config.visc * dd_ux[i][j]);
                 aux_Y[i][j] = u_y[i][j] + dt * (-1.0 * (u_x[i][j] * duy_dx[i][j] + u_y[i][j] * duy_dy[i][j]) + config.visc * dd_uy[i][j]);
-            
+            }
+        }
+
+        for (int i {1} ; i < (config.nodes - 1) ; ++i)
+        {
+            for (int j {1} ; j < (config.nodes - 1) ; ++j)
+            {
                 divAuxField[i][j] = ((aux_X[i][j + 1] - aux_X[i][j]) / config.dx + (aux_Y[i + 1][j] - aux_Y[i][j]) / config.dx);
             }
         }
@@ -118,6 +128,20 @@ int main()
         while (1e-5 < residual_max && phi_counter < static_cast<double>(config.phi_iterations))
         {
             Matrix old_phi {phi};
+
+            for (int j {1}; j < config.nodes - 1; ++j)
+            {
+                phi[0][j] = phi[1][j];
+                phi[config.nodes - 1][j] = phi[config.nodes - 2][j];
+            }
+
+            for (int i {1}; i < config.nodes - 1; ++i)
+            {
+                phi[i][0] = phi[i][1];
+                phi[i][config.nodes - 1] = phi[i][config.nodes - 2];
+            }
+
+            phi[0][0] = 0.0;
 
             for (int i {1} ; i < (config.nodes - 1) ; ++i)
             {
@@ -164,6 +188,12 @@ int main()
             u_y[i][0] = lefty[i];
             u_x[i][config.nodes - 1] = rightx[i];
             u_y[i][config.nodes - 1] = righty[i];
+        }
+
+        if (!std::isfinite(dt) || dt <= 0.0 || counter + dt == counter)
+        {
+            std::cerr << "Timestep too small, stopping";
+            break;
         }
 
         counter += dt;

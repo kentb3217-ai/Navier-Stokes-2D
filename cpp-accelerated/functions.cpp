@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <fstream>
+#include <limits>
 #include "functions.hpp"
 #include "configuration.hpp"
 
@@ -35,7 +36,12 @@ double dtAdvective (Matrix& mX, Matrix& mY)
     double max_x {maxMatrix(absMatrix(mX))};
     double max_y {maxMatrix(absMatrix(mY))};
 
-    return (config.cfl * (std::min((config.dx / max_x), (config.dx / max_y))));
+    if (max_x == 0.0 && max_y == 0.0);
+    {
+        return  std::numeric_limits<double>::infinity();
+    }
+
+    return config.cfl / ((max_x / config.dx) + (max_y / config.dx));
 }
 
 Matrix subtractMatrices (Matrix& m1, Matrix& m2)
@@ -56,7 +62,7 @@ Matrix subtractMatrices (Matrix& m1, Matrix& m2)
 
 void writeVector(std::ofstream& out, const std::vector<double>& vec)
 {
-    std::uint32_t n {vec.size()};
+    std::uint32_t n {static_cast<std::uint32_t>(vec.size())};
 
     out.write(reinterpret_cast<char*>(&n), sizeof(n));
     out.write(reinterpret_cast<const char*>(vec.data()), n * sizeof(double));
@@ -64,7 +70,7 @@ void writeVector(std::ofstream& out, const std::vector<double>& vec)
 
 void writeMatrix(std::ofstream& out, const Matrix& mat)
 {
-    std::uint32_t rows {mat.size()};
+    std::uint32_t rows {static_cast<std::uint32_t>(mat.size())};
 
     out.write(reinterpret_cast<char*>(&rows), sizeof(rows));
 
@@ -76,7 +82,7 @@ void writeMatrix(std::ofstream& out, const Matrix& mat)
 
 void writeVecMatrix(std::ofstream& out, const std::vector<Matrix>& lat)
 {
-    std::uint32_t count {lat.size()};
+    std::uint32_t count {static_cast<std::uint32_t>(lat.size())};
 
     out.write(reinterpret_cast<char*>(&count), sizeof(count));
 
